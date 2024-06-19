@@ -1,0 +1,19 @@
+{
+  "name": "trust-services-platform-ts",
+  "packageManager": "yarn@4.3.0",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node index.ts"
+  },
+  "dependencies": {
+    "@credo-ts/askar": "^0.5.3",
+    "@credo-ts/core": "^0.5.3",
+    "@credo-ts/node": "^0.5.3",
+    "@hyperledger/aries-askar-nodejs": "^0.2.1",
+    "@hyperledger/aries-askar-shared": "^0.2.1"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
