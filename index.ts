@@ -1,38 +1,57 @@
-import type { InitConfig } from "@credo-ts/core";
-import { Agent } from "@credo-ts/core";
-import { agentDependencies as dependencies } from "@credo-ts/node";
-import { AskarModule } from "@credo-ts/askar";
-import { ariesAskar } from "@hyperledger/aries-askar-nodejs";
-import { HttpOutboundTransport, WsOutboundTransport } from "@credo-ts/core";
-import { HttpInboundTransport } from "@credo-ts/node";
+import { LogLevel, type InitConfig } from "@credo-ts/core";
+import {
+  CredoRestAgentConfig,
+  createRestAgent,
+  setupApp,
+} from "@credo-ts/rest";
 
-const config: InitConfig = {
+import { readFile } from 'fs/promises'
+
+const agentConfig = {
   label: "test-agent-ts",
   walletConfig: {
-    id: "test-wallet-id",
-    key: "testkey0000000000000000000000000",
+    id: "test-wallet-id-1",
+    key: "testkey0000000000000000000000001",
+    storage: {
+      type: 'sqlite'
+    }
   },
-};
+} satisfies InitConfig | CredoRestAgentConfig;
 
-const modules = {
-  // Register the Askar module on the agent
-  askar: new AskarModule({ ariesAskar }),
-};
+const run = async () => {
+  try {
+    const agent = await createRestAgent({
+      ...agentConfig,
+      inboundTransports: [
+        {
+          transport: "http",
+          port: 3001,
+        },
+      ],
+      outboundTransports: ["http"],
+      logLevel: LogLevel.debug,
+      endpoints: ["http://localhost:3001"],
+      multiTenant: true,
+      indyLedgers: [{
+        isProduction: false,
+        indyNamespace: 'bcovrin:test',
+        genesisTransactions: await readFile('./genesis.txt', 'utf-8'),
+        connectOnStartup: true
+      }]
+    });
 
-const agent = new Agent({ config, dependencies, modules });
+    const { start } = await setupApp({
+      adminPort: 3000,
+      enableCors: true,
+      agent,
+    });
 
-// Register the HTTP transports
-agent.registerOutboundTransport(new HttpOutboundTransport());
-agent.registerOutboundTransport(new WsOutboundTransport());
-agent.registerInboundTransport(new HttpInboundTransport({ port: 3000 }));
-
-agent
-  .initialize()
-  .then(() => {
-    console.log("Agent initialized");
-  })
-  .catch((e) => {
+    start();
+  } catch (e) {
     console.error(
-      `Something went wrong while setting up the agent! Message: ${e}`
+      `Something went wrong while setting up the app! Message: ${e}`
     );
-  });
+  }
+};
+
+run();
